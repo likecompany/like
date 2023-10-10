@@ -1,0 +1,18 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:latest
+    restart: unless-stopped
+    command: redis-server --port ${REDIS_PORT} --save 20 1 --loglevel warning --requirepass ${REDIS_PASSWORD}
+    env_file:
+      - ${PWD}/.env
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    networks:
+      - like_network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3

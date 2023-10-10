@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  like:
+    image: like:latest
+    build:
+      context: ${PWD}/like
+      dockerfile: docker/Dockerfile
+    command: /bin/bash -c \
+      "echo '[+] Compiling like app...' && \
+      ./like"
+    volumes:
+      - ${PWD}/like/:/app
+    env_file:
+      - ${PWD}/.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    expose:
+      - ${LIKE_PORT}
+    networks:
+      - like_network
