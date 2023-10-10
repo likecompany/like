@@ -29,45 +29,45 @@ struct add_player_t {
     };
 };
 
-struct player_t {
-    size_t id;
-    bool is_left = false;
-    int32_t stack;
-    int32_t behind;
-    int32_t front;
-    uint8_t state;
-
-    struct glaze {
-        using T = player_t;
-
-        static constexpr auto value = glz::object(
-                        "id",
-                        &T::id,
-                        "is_left",
-                        &T::is_left,
-                        "stack",
-                        &T::stack,
-                        "behind",
-                        &T::behind,
-                        "front",
-                        &T::front,
-                        "state",
-                        &T::state);
-    };
-};
-
 struct action_t {
-    int32_t amount;
-    uint8_t action;
-    uint8_t position;
+        int32_t amount;
+        uint8_t action;
+        uint8_t position;
 
-    struct glaze {
-        using T = action_t;
+        struct glaze {
+            using T = action_t;
 
-        static constexpr auto value = glz::object(
-                        "amount", &T::amount, "action", &T::action, "position", &T::position);
+            static constexpr auto value = glz::object(
+                    "amount", &T::amount, "action", &T::action, "position", &T::position);
+        };
     };
-};
+
+struct player_t {
+        size_t id;
+        bool is_left = false;
+        int32_t stack;
+        int32_t behind;
+        int32_t front;
+        uint8_t state;
+
+        struct glaze {
+            using T = player_t;
+
+            static constexpr auto value = glz::object(
+                    "id",
+                    &T::id,
+                    "is_left",
+                    &T::is_left,
+                    "stack",
+                    &T::stack,
+                    "behind",
+                    &T::behind,
+                    "front",
+                    &T::front,
+                    "state",
+                    &T::state);
+        };
+    };
 
 struct game_t {
     int32_t sb_bet;
@@ -84,25 +84,24 @@ struct game_t {
         using T = game_t;
 
         static constexpr auto value = glz::object(
-                        "sb_bet",
-                        &T::sb_bet,
-                        "bb_bet",
-                        &T::bb_bet,
-                        "bb_mult",
-                        &T::bb_mult,
-                        &T::bb_bet,
-                        "players",
-                        &T::players,
-                        "current",
-                        &T::current,
-                        "on_start_all_players_are_allin",
-                        &T::on_start_all_players_are_allin,
-                        "min_raise",
-                        &T::min_raise,
-                        "round",
-                        &T::round,
-                        "flop_dealt",
-                        &T::flop_dealt);
+                "sb_bet",
+                &T::sb_bet,
+                "bb_bet",
+                &T::bb_bet,
+                "bb_mult",
+                &T::bb_mult,
+                "players",
+                &T::players,
+                "current",
+                &T::current,
+                "on_start_all_players_are_allin",
+                &T::on_start_all_players_are_allin,
+                "min_raise",
+                &T::min_raise,
+                "round",
+                &T::round,
+                "flop_dealt",
+                &T::flop_dealt);
     };
 };
 
@@ -116,6 +115,7 @@ struct hand_t {
         static constexpr auto value = glz::object("id", &T::id, "hand", &T::hand);
     };
 };
+
 } // namespace helpers
 
 struct add_game_request {
@@ -162,7 +162,7 @@ struct adjust_game_request {
     bool is_new_game = false;
 
     struct glaze {
-        using T = left_from_game_request;
+        using T = adjust_game_request;
 
         static constexpr auto value = glz::object("access", &T::access, "is_new_game", &T::is_new_game);
     };
@@ -404,7 +404,7 @@ auto adjust_game_route(const restinio::request_handle_t &request, sw::redis::Red
     }
 
     auto engine = utils::get_engine<>(glz::write_json(json));
-    engine.adjust();
+    engine.adjust(json->is_new_game);
     redis.set("game_" + json->access, glz::write_json(utils::engine_as_game(engine)));
 
     auto response = schemas::adjust_game_response(true, true);
