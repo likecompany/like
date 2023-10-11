@@ -42,6 +42,16 @@ struct action_t {
         };
     };
 
+    struct cards_t {
+        std::vector< std::string > hands;
+        std::vector< std::string > board;
+
+        struct glaze {
+            using T = cards_t;
+
+            static constexpr auto value = glz::object("hands", &T::hands, "board", &T::board);
+        };
+    };
 struct player_t {
         size_t id;
         bool is_left = false;
@@ -190,13 +200,12 @@ struct execute_action_request {
 };
 
 struct get_evaluation_result_request {
-    std::vector< std::string > hands;
-    std::vector< std::string > board;
+    helpers::cards_t cards;
 
     struct glaze {
         using T = get_evaluation_result_request;
 
-        static constexpr auto value = glz::object("hands", &T::hands, "board", &T::board);
+        static constexpr auto value = glz::object("cards", &T::cards);
     };
 };
 
@@ -247,7 +256,7 @@ struct left_from_game_request {
 struct set_next_game_request {
     std::string access;
     bool find_winners = false;
-    std::optional< get_evaluation_result_request > cards;
+    std::optional< helpers::cards_t > cards;
 
     struct glaze {
         using T = set_next_game_request;
@@ -463,13 +472,14 @@ auto execute_action_route(const restinio::request_handle_t &request, sw::redis::
 auto get_evaluation_result_route(const restinio::request_handle_t &request)
                 -> restinio::request_handling_status_t {
     auto json = glz::read_json< schemas::get_evaluation_result_request >(request->body());
-    if (json->board.size() != 5) {
+    if (json->cards.board.size() != 5) {
         throw std::runtime_error("Invalid board size");
     }
 
     schemas::get_evaluation_result_response response;
     for (const auto &[result, id] : poker::get_evaluation_result(
-                         poker::cards(json->board, json->hands), utils::generator(json->hands.size()))) {
+                         poker::cards(json->cards.board, json->cards.hands),
+                         utils::generator(json->cards.hands.size()))) {
         response.result.emplace_back(id, result.as_string_long());
     }
 
