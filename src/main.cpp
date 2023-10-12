@@ -30,28 +30,29 @@ struct add_player_t {
 };
 
 struct action_t {
-        int32_t amount;
-        uint8_t action;
-        uint8_t position;
+    int32_t amount;
+    uint8_t action;
+    uint8_t position;
 
-        struct glaze {
-            using T = action_t;
+    struct glaze {
+        using T = action_t;
 
-            static constexpr auto value = glz::object(
-                    "amount", &T::amount, "action", &T::action, "position", &T::position);
-        };
+        static constexpr auto value = glz::object(
+                "amount", &T::amount, "action", &T::action, "position", &T::position);
     };
+};
 
-    struct cards_t {
-        std::vector< std::string > hands;
-        std::vector< std::string > board;
+struct cards_t {
+    std::vector< std::string > hands;
+    std::vector< std::string > board;
 
-        struct glaze {
-            using T = cards_t;
+    struct glaze {
+        using T = cards_t;
 
-            static constexpr auto value = glz::object("hands", &T::hands, "board", &T::board);
-        };
+        static constexpr auto value = glz::object("hands", &T::hands, "board", &T::board);
     };
+};
+
 struct player_t {
         size_t id;
         bool is_left = false;
@@ -77,7 +78,7 @@ struct player_t {
                     "state",
                     &T::state);
         };
-    };
+};
 
 struct game_t {
     int32_t sb_bet;
@@ -125,7 +126,6 @@ struct hand_t {
         static constexpr auto value = glz::object("id", &T::id, "hand", &T::hand);
     };
 };
-
 } // namespace helpers
 
 struct add_game_request {
