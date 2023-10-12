@@ -3,7 +3,6 @@
 //
 
 #include <algorithm>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <utility>
@@ -31,8 +30,8 @@ struct add_player_t {
 
 struct action_t {
     int32_t amount;
-    uint8_t action;
-    uint8_t position;
+    enums::action_t action;
+    enums::position_t position;
 
     struct glaze {
         using T = action_t;
@@ -54,30 +53,34 @@ struct cards_t {
 };
 
 struct player_t {
-        size_t id;
-        bool is_left = false;
-        int32_t stack;
-        int32_t behind;
-        int32_t front;
-        uint8_t state;
+    size_t id;
+    bool is_left = false;
+    int32_t stack;
+    int32_t behind;
+    int32_t front;
+    int32_t round_bet;
+    enums::state_t state;
 
-        struct glaze {
-            using T = player_t;
 
-            static constexpr auto value = glz::object(
-                    "id",
-                    &T::id,
-                    "is_left",
-                    &T::is_left,
-                    "stack",
-                    &T::stack,
-                    "behind",
-                    &T::behind,
-                    "front",
-                    &T::front,
-                    "state",
-                    &T::state);
-        };
+    struct glaze {
+        using T = player_t;
+
+        static constexpr auto value = glz::object(
+                        "id",
+                        &T::id,
+                        "is_left",
+                        &T::is_left,
+                        "stack",
+                        &T::stack,
+                        "behind",
+                        &T::behind,
+                        "front",
+                        &T::front,
+                        "round_bet",
+                        &T::round_bet,
+                        "state",
+                        &T::state);
+    };
 };
 
 struct game_t {
@@ -85,10 +88,10 @@ struct game_t {
     int32_t bb_bet;
     uint8_t bb_mult = 20;
     std::vector< player_t > players;
-    uint8_t current;
+    enums::position_t current;
     bool on_start_all_players_are_allin = false;
     int32_t min_raise = bb_bet;
-    uint8_t round = 0;
+    enums::rounds_t round = enums::rounds_t::preflop;
     bool flop_dealt = false;
 
     struct glaze {
@@ -134,10 +137,10 @@ struct add_game_request {
     int32_t bb_bet;
     uint8_t bb_mult = 20;
     std::vector< helpers::player_t > players;
-    uint8_t current;
+    enums::position_t current;
     bool on_start_all_players_are_allin = false;
     int32_t min_raise = 0;
-    uint8_t round = 0;
+    enums::rounds_t round = enums::rounds_t::preflop;
     bool flop_dealt = false;
 
     struct glaze {
@@ -244,7 +247,7 @@ struct join_to_game_request {
 
 struct left_from_game_request {
     std::string access;
-    uint8_t position;
+    enums::position_t position;
 
     struct glaze {
         using T = left_from_game_request;
@@ -328,62 +331,60 @@ template < uint8_t A = 0, uint8_t B = 1 >
 auto get_engine(const std::string &json) -> poker::engine< A, B > {
     auto game_json = glz::read_json< schemas::add_game_request >(json);
 
-    if (game_json->current > static_cast< uint8_t >(enums::position_t::btn) ||
-        game_json->round > static_cast< uint8_t >(enums::rounds_t::showdown)) {
-        throw std::runtime_error("Game current position or round are invalid");
-    }
-
     std::vector< poker::player > players;
-    for (const auto &player : game_json->players) {
-        if (player.state > static_cast< uint8_t >(enums::state_t::allin)) {
-            throw std::runtime_error("Invalid player position");
-        }
-
-        players.emplace_back(
-                        player.id,
-                        player.is_left,
-                        player.stack,
-                        player.behind,
-                        player.front,
-                        static_cast< enums::state_t >(player.state));
-    }
+    std::transform(game_json->players.begin(),
+                   game_json->players.end(),
+                   std::back_inserter(players),
+                   [](const auto &player) -> poker::player {
+                       return poker::player(
+                                       player.id,
+                                       player.is_left,
+                                       player.stack,
+                                       player.behind,
+                                       player.front,
+                                       player.round_bet,
+                                       player.state);
+                   });
 
     return poker::engine< A, B >(
                     game_json->sb_bet,
                     game_json->bb_bet,
                     game_json->bb_mult,
                     players,
-                    static_cast< enums::position_t >(game_json->current),
+                    game_json->current,
                     game_json->on_start_all_players_are_allin,
                     game_json->min_raise,
-                    static_cast< enums::rounds_t >(game_json->round),
+                    game_json->round,
                     game_json->flop_dealt);
 }
 
 template < uint8_t A = 0, uint8_t B = 1 >
 auto engine_as_game(const poker::engine< A, B > &engine) -> schemas::helpers::game_t {
     std::vector< schemas::helpers::player_t > players;
-    for (const auto &player : engine.players) {
-        players.emplace_back(
-                        player.id,
-                        player.is_left,
-                        player.stack,
-                        player.behind,
-                        player.front,
-                        static_cast< uint8_t >(player.state));
-    }
+    std::transform(engine.players.begin(),
+                   engine.players.end(),
+                   std::back_inserter(players),
+                   [](const auto &player) -> schemas::helpers::player_t {
+                       return schemas::helpers::player_t(
+                                       player.id,
+                                       player.is_left,
+                                       player.stack,
+                                       player.behind,
+                                       player.front,
+                                       player.round_bet,
+                                       player.state);
+                   });
 
-    auto result = schemas::helpers::game_t(
+    return schemas::helpers::game_t(
                     engine.get_sb_bet(),
                     engine.get_bb_bet(),
                     engine.get_bb_mult(),
                     players,
-                    static_cast< uint8_t >(engine.get_current_player()),
+                    engine.get_current_player(),
                     engine.get_on_start_all_players_are_allin(),
                     engine.get_min_raise(),
-                    static_cast< uint8_t >(engine.get_round()),
+                    engine.get_round(),
                     engine.get_flop_dealt());
-    return result;
 }
 }} // namespace like::utils
 
@@ -439,10 +440,6 @@ auto delete_game_route(const restinio::request_handle_t &request, sw::redis::Red
 auto execute_action_route(const restinio::request_handle_t &request, sw::redis::Redis &redis)
                 -> restinio::request_handling_status_t {
     auto json = glz::read_json< schemas::execute_action_request >(request->body());
-    if (json->action.action > static_cast< uint8_t >(enums::action_t::allin) ||
-        json->action.position > static_cast< uint8_t >(enums::position_t::btn)) {
-        throw std::runtime_error("Player action or position are invalid");
-    }
 
     auto game = redis.get("game_" + json->access);
     if (!game) {
@@ -519,10 +516,7 @@ auto get_possible_actions_route(const restinio::request_handle_t &request, sw::r
 
     schemas::get_possible_actions_response response;
     for (const auto &action : engine.possible_actions()) {
-        response.result.emplace_back(
-                        action.amount,
-                        static_cast< uint8_t >(action.action),
-                        static_cast< uint8_t >(action.position));
+        response.result.emplace_back(action.amount, action.action, action.position);
     }
 
     return request->create_response(restinio::status_ok())
@@ -561,7 +555,7 @@ auto left_from_game_route(const restinio::request_handle_t &request, sw::redis::
     }
     auto engine = utils::get_engine<>(game.value());
 
-    engine.remove_player_from_game(json->position);
+    engine.remove_player_from_game(static_cast< uint8_t >(json->position));
 
     redis.set("game_" + json->access, glz::write_json(utils::engine_as_game(engine)));
 
