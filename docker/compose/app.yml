@@ -7,16 +7,13 @@ services:
       context: ${PWD}/like
       dockerfile: docker/Dockerfile
     command: /bin/bash -c \
-      "echo '[+] Compiling like app...' && \
-      ./like"
-    volumes:
-      - ${PWD}/like/:/app
+      "echo '[+] Running Like Backend' && ./like"
     env_file:
       - ${PWD}/.env
     depends_on:
       redis:
         condition: service_healthy
-    expose:
-      - ${LIKE_PORT}
+    ports:
+      - ${LIKE_PORT}:${LIKE_PORT}
     networks:
       - like_network

@@ -1,33 +1,31 @@
-FROM ubuntu:latest
+FROM archlinux:latest
 
 WORKDIR /app/build
 
-RUN apt update && \
-    apt install -y \
-    git \
-    gcc g++ \
-    libstdc++6 \
-    build-essential cmake make \
-    libboost-all-dev
+COPY . /app
 
-RUN git clone https://github.com/redis/hiredis.git
+RUN pacman -Syy && \
+    pacman -S --noconfirm git \
+      gcc \
+      cmake make \
+      boost
+
+RUN git clone https://github.com/redis/hiredis.git && \
+    git clone https://github.com/sewenew/redis-plus-plus.git && \
+    git clone https://github.com/nodejs/http-parser
+
 WORKDIR /app/build/hiredis
-RUN make
-RUN make install
 
-WORKDIR /app/build
-RUN git clone https://github.com/sewenew/redis-plus-plus.git
-WORKDIR /app/build/redis-plus-plus
-RUN mkdir compile
+RUN make && make install
+
 WORKDIR /app/build/redis-plus-plus/compile
-RUN cmake  ..
-RUN make
-RUN make install
 
-WORKDIR /app/build
-RUN git clone https://github.com/nodejs/http-parser
+RUN cmake .. && make && make install
+
 WORKDIR /app/build/http-parser
-RUN make
-RUN make install
+
+RUN make && make install
 
 WORKDIR /app/build
+
+RUN cmake .. && make
