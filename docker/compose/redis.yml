@@ -3,7 +3,8 @@ version: "3.9"
 services:
   redis:
     image: redis:latest
-    restart: unless-stopped
+    volumes:
+      - redis_data:/data
     command: redis-server --port ${REDIS_PORT} --save 20 1 --loglevel warning
     env_file:
       - ${PWD}/.env
@@ -16,3 +17,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: on-failure
+
+volumes:
+  redis_data:
