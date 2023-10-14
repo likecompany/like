@@ -17,3 +17,4 @@ services:
       - ${LIKE_PORT}:${LIKE_PORT}
     networks:
       - like_network
+    restart: unless-stopped

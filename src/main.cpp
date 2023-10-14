@@ -409,11 +409,13 @@ auto add_game_route(const restinio::request_handle_t &request, sw::redis::Redis 
 auto adjust_game_route(const restinio::request_handle_t &request, sw::redis::Redis &redis)
                 -> restinio::request_handling_status_t {
     auto json = glz::read_json< schemas::adjust_game_request >(request->body());
-    if (!redis.get("game_" + json->access)) {
+
+    auto game = redis.get("game_" + json->access);
+    if (!game) {
         throw std::runtime_error("Game not found");
     }
 
-    auto engine = utils::get_engine<>(glz::write_json(json));
+    auto engine = utils::get_engine<>(game.value());
     engine.adjust(json->is_new_game);
     redis.set("game_" + json->access, glz::write_json(utils::engine_as_game(engine)));
 
