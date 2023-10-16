@@ -86,11 +86,11 @@ struct player_t {
 struct game_t {
     int32_t sb_bet;
     int32_t bb_bet;
-    uint8_t bb_mult = 20;
+    uint8_t bb_mult;
     std::vector< player_t > players;
     enums::position_t current;
     bool on_start_all_players_are_allin = false;
-    int32_t min_raise = bb_bet;
+    int32_t min_raise;
     enums::rounds_t round = enums::rounds_t::preflop;
     bool flop_dealt = false;
 
@@ -455,8 +455,8 @@ auto execute_action_route(const restinio::request_handle_t &request, sw::redis::
 
     auto action = poker::player_action(
                     json->action.amount,
-                    static_cast< enums::action_t >(json->action.action),
-                    static_cast< enums::position_t >(json->action.position));
+                    json->action.action,
+                    json->action.position);
 
     engine.execute_action(action);
     redis.set("game_" + json->access, glz::write_json(utils::engine_as_game(engine)));
